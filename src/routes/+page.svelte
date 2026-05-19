@@ -224,7 +224,7 @@
 		{:else if state === 'dealer-turn'}
 			Dealer's turn...
 		{:else if state === 'game-over'}
-			<button onclick={newGame} style:--color={playerWon ? '#4f4' : dealerWon ? '#f44' : '#ff4'}>New Game</button>
+			<button onclick={newGame} style:--color={playerWon ? '#484' : dealerWon ? '#a44' : '#884'}>New Game</button>
 		{/if}
 	</div>
 </div>
