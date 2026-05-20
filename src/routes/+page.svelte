@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { tick } from 'svelte';
 	import { Spring } from 'svelte/motion';
+	import { draw } from 'svelte/transition';
 
 	let cardDeck: { suit: string; value: number }[] = $state([]);
 
@@ -46,6 +47,7 @@
 		x: number;
 		y: number;
 		to: 'player' | 'dealer';
+		id: string;
 	}[] = $state([]);
 
 	let playerHand: HTMLElement | null = $state(null);
@@ -75,27 +77,30 @@
 			x: deckRect.left + deckRect.width / 2,
 			y: deckRect.top + deckRect.height / 2
 		};
-		const end = {
+		let end = {
 			x: targetRect.left + targetRect.width / 2,
 			y: targetRect.top + targetRect.height / 2
 		};
 
-		const spring = new Spring(start, { stiffness: 0.1, damping: 0.3 });
-		let moving_index =
-			movingCards.push({
-				...card,
-				x: start.x,
-				y: start.y,
-				to
-			}) - 1;
-		const movingCard = movingCards[moving_index];
-		if (!movingCard) return;
-		// Animate the card moving from the deck to the target hand
+		const spring = new Spring(start, { stiffness: 0.3, damping: 0.5 });
+		let id = crypto.randomUUID();
+		movingCards.push({
+			...card,
+			x: start.x,
+			y: start.y,
+			to,
+			id
+		});
 		let done = false;
 		requestAnimationFrame(function animate() {
+		if (!deck || !playerHand || !dealerHand) return;
 			if (done) return;
-			movingCard.x = spring.current.x;
-			movingCard.y = spring.current.y;
+			const { x, y } = spring.current;
+			const movingCard = movingCards.find((c) => c.id === id);
+			if (movingCard) {
+				movingCard.x = x;
+				movingCard.y = y;
+			}
 			requestAnimationFrame(animate);
 		});
 		await spring.set(end);
@@ -105,7 +110,7 @@
 		} else {
 			dealerCards[index].placeholder = false;
 		}
-		movingCards.splice(moving_index, 1);
+		movingCards = movingCards.filter((c) => c.id !== id);
 	}
 
 	function resetGame() {
@@ -176,6 +181,10 @@
 				}
 			);
 		}
+	}
+
+	function wait(ms: number) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
 	async function dealInitialCards() {
