@@ -69,7 +69,9 @@
 		if (!deck || !playerHand || !dealerHand) return;
 		const deckRect = deck.getBoundingClientRect();
 		const slot = to === 'player' ? playerCardSlots[index] : dealerCardSlots[index];
+		const cardRect = slot?.querySelector('.card')?.getBoundingClientRect();
 		const targetRect =
+			cardRect ??
 			slot?.getBoundingClientRect() ??
 			(to === 'player' ? playerHand : dealerHand).getBoundingClientRect();
 
@@ -82,7 +84,7 @@
 			y: targetRect.top + targetRect.height / 2
 		};
 
-		const spring = new Spring(start, { stiffness: 0.3, damping: 0.5 });
+		const spring = new Spring(start, { stiffness: 0.5, damping: 0.9 });
 		let id = crypto.randomUUID();
 		movingCards.push({
 			...card,
@@ -256,7 +258,7 @@
 		{/each}
 	</div>
 	{#if state === 'game-over'}
-		<div class="status" style:--color={endStateColor} style="font-size: 5em">
+		<div class="status" style:--color={endStateColor}>
 			{#if playerWon}
 				You win!
 			{:else if dealerWon}
@@ -307,6 +309,9 @@
 		align-items: center;
 		justify-content: center;
 		height: 100vh;
+		overflow: hidden;
+		position: relative;
+		width:  100vw;
 	}
 	.hand {
 		position: absolute;
@@ -344,6 +349,12 @@
 		cursor: pointer;
 		font-weight: 500;
 	}
+	@media (pointer: coarse) {
+		button {
+			padding: 1em 2em;
+			font-size: 1.2em;
+		}
+	}
 	@property --color {
 		syntax: '<color>';
 		inherits: true;
@@ -362,6 +373,8 @@
 		background-clip: text;
 		-webkit-text-fill-color: transparent;
 		font-weight: 700;
+		text-align: center;
+		font-size: 5em;
 	}
 	.status-bg {
 		position: absolute;
@@ -372,5 +385,31 @@
 		height: min(80vw, 80vh);
 		background: radial-gradient(circle, var(--color) 0%, transparent 50%);
 		pointer-events: none;
+	}
+	@media (max-width: 600px) {
+		.card-slot {
+			width: 50px;
+		}
+		:global(.hand:has(.card-slot:nth-child(n + 4)) .card-slot) {
+			width: 40px;
+		}
+		:global(.hand:has(.card-slot:nth-child(n + 6)) .card-slot) {
+			width: 20px;
+		}
+		.deck {
+			right: -65px;
+			transform: translateY(-50%);
+		}
+		.status {
+			font-size: 3em;
+		}
+	}
+	@media (max-height: 500px) {
+		.card-slot {
+			height: 50px;
+		}
+		.score {
+			margin-block: 25vh;
+		}
 	}
 </style>
