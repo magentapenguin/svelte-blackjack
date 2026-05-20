@@ -24,20 +24,19 @@
         clubs: '<svg><use href="#clubs"></use></svg>',
         spades: '<svg><use href="#spades"></use></svg>',
     }
-    let suitColors = {
+    let suitColors = $dervied(!dark ?
+	{
         hearts: "#c00",
         diamonds: "#c00",
         clubs: "#000",
         spades: "#000",
-    }
-    if (dark) {
-        suitColors = {
-            hearts: "#f88",
-            diamonds: "#f88",
-            clubs: "#ccc",
-            spades: "#ccc",
-        }
-    }
+    } : {
+        hearts: "#faa",
+        diamonds: "#faa",
+        clubs: "#fff",
+        spades: "#fff",
+    })
+    
     const mapping = {
         "J": 11,
         "Q": 12,
