@@ -6,6 +6,7 @@
         color = "blue",
         placeholder = false,
         hidden = false,
+        toponly = false,
     }: {
         flipped?: boolean,
         suit: "hearts" | "diamonds" | "clubs" | "spades",
@@ -13,12 +14,13 @@
         color?: "blue" | "green" | "purple" | "red" | "yellow",
         placeholder?: boolean,
         hidden?: boolean,
+        toponly?: boolean,
     } = $props();
     const suits = {
-        hearts: '<i class="fa-solid fa-heart"></i>',
-        diamonds: '<i class="fa-solid fa-diamond"></i>',
-        clubs: '<i class="fa-solid fa-club"></i>',
-        spades: '<i class="fa-solid fa-spade"></i>',
+        hearts: '<svg><use href="#hearts"></use></svg>',
+        diamonds: '<svg><use href="#diamonds"></use></svg>',
+        clubs: '<svg><use href="#clubs"></use></svg>',
+        spades: '<svg><use href="#spades"></use></svg>',
     }
     const suitColors = {
         hearts: "#c00",
@@ -84,6 +86,7 @@
         class={["card", { flipped }]}
         style={placeholder ? "opacity: 0.5; filter: grayscale(100%) brightness(50%);" : ""}
     >
+    {#if !toponly}
         <div class="front" hidden={placeholder}>
             <div class="symbol" style="color: {suitColors[suit]}">
                 {inverseMapping[value] ?? value}
@@ -97,6 +100,7 @@
                 {@html suits[suit]}
             </div>
         </div>
+    {/if}
         <div class="back">
             <div class="pattern"></div>
         </div>
@@ -195,4 +199,9 @@
 		background-position: 0 0;
 		border-radius: 1em;
 	}
+    :global(svg) {
+        width: 1em;
+        height: 1em;
+        vertical-align: -0.125em;
+    }
 </style>

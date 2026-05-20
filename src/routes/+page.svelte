@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Card from '$lib/Card.svelte';
+	import CardStack from '$lib/CardStack.svelte';
 	import { onMount } from 'svelte';
 	import { tick } from 'svelte';
 	import { Spring } from 'svelte/motion';
@@ -35,19 +36,24 @@
 		return value;
 	}
 
-
-
 	let playerCards: { suit: string; value: number; placeholder: boolean }[] = $state([]);
 	let dealerCards: { suit: string; value: number; placeholder: boolean }[] = $state([]);
 	let dealerScore = $derived(calculateHandValue(dealerCards));
 	let playerScore = $derived(calculateHandValue(playerCards));
-	let movingCards: { suit: string; value: number; x: number; y: number; to: 'player' | 'dealer' }[] = $state([]);
+	let movingCards: {
+		suit: string;
+		value: number;
+		x: number;
+		y: number;
+		to: 'player' | 'dealer';
+	}[] = $state([]);
 
 	let playerHand: HTMLElement | null = $state(null);
 	let dealerHand: HTMLElement | null = $state(null);
 	let deck: HTMLElement | null = $state(null);
 	let playerCardSlots: (HTMLElement | null)[] = $state([]);
 	let dealerCardSlots: (HTMLElement | null)[] = $state([]);
+	let statusBg: HTMLElement | null = $state(null);
 
 	async function drawCard(to: 'player' | 'dealer') {
 		const card = getRandomCard();
@@ -61,24 +67,27 @@
 		if (!deck || !playerHand || !dealerHand) return;
 		const deckRect = deck.getBoundingClientRect();
 		const slot = to === 'player' ? playerCardSlots[index] : dealerCardSlots[index];
-		const targetRect = slot?.getBoundingClientRect() ?? (to === 'player' ? playerHand : dealerHand).getBoundingClientRect();
+		const targetRect =
+			slot?.getBoundingClientRect() ??
+			(to === 'player' ? playerHand : dealerHand).getBoundingClientRect();
 
 		const start = {
 			x: deckRect.left + deckRect.width / 2,
-			y: deckRect.top + deckRect.height / 2,
+			y: deckRect.top + deckRect.height / 2
 		};
 		const end = {
 			x: targetRect.left + targetRect.width / 2,
-			y: targetRect.top + targetRect.height / 2,
+			y: targetRect.top + targetRect.height / 2
 		};
 
 		const spring = new Spring(start, { stiffness: 0.1, damping: 0.3 });
-		let moving_index = movingCards.push({
-			...card,
-			x: start.x,
-			y: start.y,
-			to,
-		}) - 1;
+		let moving_index =
+			movingCards.push({
+				...card,
+				x: start.x,
+				y: start.y,
+				to
+			}) - 1;
 		const movingCard = movingCards[moving_index];
 		if (!movingCard) return;
 		// Animate the card moving from the deck to the target hand
@@ -114,21 +123,19 @@
 		movingCards = [];
 	}
 
-	let state: 'initial' | 'dealing' | 'player-turn' | 'dealer-turn' | 'game-over' = $state('initial');
+	let state: 'initial' | 'dealing' | 'player-turn' | 'dealer-turn' | 'game-over' =
+		$state('initial');
 	let dealerWon = $state(false);
 	let playerWon = $state(false);
+	let endStateColor = $derived(playerWon ? '#4f4' : dealerWon ? '#f44' : '#ff4');
 
 	async function hit() {
 		if (state !== 'player-turn') return;
 		state = 'dealing';
 		await drawCard('player');
 		state = 'player-turn';
-		if (playerScore > 21) {
-			state = 'game-over';
-			dealerWon = true;
-		} else if (playerScore === 21) {
-			state = 'game-over';
-			playerWon = true;
+		if (playerScore >= 21) {
+			await endGame();
 		}
 	}
 	async function stand() {
@@ -137,11 +144,37 @@
 		while (dealerScore < 17) {
 			await drawCard('dealer');
 		}
+		await endGame();
+	}
+
+	async function endGame() {
 		state = 'game-over';
-		if (dealerScore > 21 || playerScore > dealerScore) {
+		if (dealerScore > 21 && playerScore > 21) {
+			// both bust, tie
+		} else if (dealerScore > 21) {
 			playerWon = true;
-		} else if (dealerScore > playerScore) {
+		} else if (playerScore > 21) {
 			dealerWon = true;
+		} else if (playerScore === dealerScore) {
+			// tie
+		} else if (playerScore > dealerScore) {
+			playerWon = true;
+		} else {
+			dealerWon = true;
+		}
+		await tick();
+		if (statusBg) {
+			statusBg.animate(
+				[
+					{ opacity: 0, transform: 'translate(-50%, -50%) scale(0)' },
+					{ opacity: 0.2, transform: 'translate(-50%, -50%) scale(1)' }
+				],
+				{
+					duration: 1000,
+					easing: 'ease-out',
+					fill: 'forwards'
+				}
+			);
 		}
 	}
 
@@ -152,18 +185,10 @@
 		await drawCard('player');
 		await drawCard('dealer');
 		state = 'player-turn';
-		if (playerScore === 21) {
-			state = 'game-over';
-			playerWon = true;
-		} else if (dealerScore === 21) {
-			state = 'game-over';
-			dealerWon = true;
-		} else if (dealerScore > 21) {
-			state = 'game-over';
-			playerWon = true;
-		} else if (playerScore > 21) {
-			state = 'game-over';
-			dealerWon = true;
+		if (playerScore >= 21) {
+			await endGame();
+		} else if (dealerScore >= 21) {
+			await endGame();
 		}
 	}
 
@@ -173,7 +198,7 @@
 		await dealInitialCards();
 	}
 
-	let cardColor = "purple";
+	let cardColor = 'purple';
 
 	resetGame();
 
@@ -182,8 +207,13 @@
 </script>
 
 <div class="game">
-	<button bind:this={deck} class="deck" onclick={hit} style="cursor: pointer; background: none; border: none; padding: 0;">
-		<Card suit="hearts" number={2} color={cardColor} />
+	<button
+		bind:this={deck}
+		class="deck"
+		onclick={hit}
+		style="cursor: pointer; background: none; border: none; padding: 0;"
+	>
+		<CardStack color={cardColor} cards={cardDeck} />
 	</button>
 
 	<div class="score dealer" style:color={dealerScore > 21 ? 'red' : 'white'}>{dealerScore}</div>
@@ -192,20 +222,32 @@
 	<div class="hand player" bind:this={playerHand}>
 		{#each playerCards as card, i (`player-${card.suit}-${card.value}-${i}`)}
 			<div class="card-slot" bind:this={playerCardSlots[i]}>
-				<Card suit={card.suit} number={card.value} placeholder={card.placeholder} flipped={!card.placeholder} color={cardColor} />
+				<Card
+					suit={card.suit}
+					number={card.value}
+					placeholder={card.placeholder}
+					flipped={!card.placeholder}
+					color={cardColor}
+				/>
 			</div>
 		{/each}
 	</div>
 
 	<div class="hand dealer" bind:this={dealerHand}>
 		{#each dealerCards as card, i (`dealer-${card.suit}-${card.value}-${i}`)}
-			<div class="card-slot" bind:this={dealerCardSlots[i]}  style="transform: rotate(-180deg);">
-				<Card suit={card.suit} number={card.value} placeholder={card.placeholder} flipped={!card.placeholder} color={cardColor} />
+			<div class="card-slot" bind:this={dealerCardSlots[i]} style="transform: rotate(-180deg);">
+				<Card
+					suit={card.suit}
+					number={card.value}
+					placeholder={card.placeholder}
+					flipped={!card.placeholder}
+					color={cardColor}
+				/>
 			</div>
 		{/each}
 	</div>
 	{#if state === 'game-over'}
-		<div class="status" style:--color={playerWon ? '#4f4' : dealerWon ? '#f44' : '#ff4'} style="font-size: 5em">
+		<div class="status" style:--color={endStateColor} style="font-size: 5em">
 			{#if playerWon}
 				You win!
 			{:else if dealerWon}
@@ -224,19 +266,24 @@
 		{:else if state === 'dealer-turn'}
 			Dealer's turn...
 		{:else if state === 'game-over'}
-			<button onclick={newGame} style:--color={playerWon ? '#484' : dealerWon ? '#a44' : '#884'}>New Game</button>
+			<button onclick={newGame} style:--color={playerWon ? '#484' : dealerWon ? '#a44' : '#884'}
+				>New Game</button
+			>
 		{/if}
 	</div>
 </div>
 {#each movingCards as card, i (`moving-${card.suit}-${card.value}-${i}`)}
-	<div class="moving-card" style="position: fixed; left: {card.x}px; top: {card.y}px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1000;">
-		<Card
-			suit={card.suit}
-			number={card.value}
-			color={cardColor}
-		/>
+	<div
+		class="moving-card"
+		style="position: fixed; left: {card.x}px; top: {card.y}px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1000;"
+	>
+		<Card suit={card.suit} number={card.value} color={cardColor} />
 	</div>
 {/each}
+
+{#if state === 'game-over'}
+	<div class="status-bg" bind:this={statusBg} style:--color={endStateColor}></div>
+{/if}
 
 <style>
 	.deck {
@@ -262,7 +309,6 @@
 		left: 50%;
 		transform: translateX(-50%);
 	}
-
 	.player {
 		bottom: 20px;
 	}
@@ -280,7 +326,11 @@
 		padding: 0.5em 1em;
 		border: none;
 		border-radius: 5px;
-		background: linear-gradient(180deg, color-mix(in srgb, var(--color), white 20%) 0%, color-mix(in srgb, var(--color), black 20%) 100%);
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--color), white 20%) 0%,
+			color-mix(in srgb, var(--color), black 20%) 100%
+		);
 		color: white;
 		cursor: pointer;
 		font-weight: 500;
@@ -294,10 +344,24 @@
 		filter: brightness(120%);
 	}
 	.status {
-		background: linear-gradient(180deg, color-mix(in srgb, var(--color), white 50%) 0%, var(--color) 100%);
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--color), white 50%) 0%,
+			var(--color) 100%
+		);
 		-webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
+		background-clip: text;
+		-webkit-text-fill-color: transparent;
 		font-weight: 700;
+	}
+	.status-bg {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: min(80vw, 80vh);
+		height: min(80vw, 80vh);
+		background: radial-gradient(circle, var(--color) 0%, transparent 50%);
+		pointer-events: none;
 	}
 </style>

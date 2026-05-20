@@ -13,6 +13,10 @@
 
 {@render children()}
 
+<i data-fa-symbol="hearts" class="fa-solid fa-heart"></i>
+<i data-fa-symbol="diamonds" class="fa-solid fa-diamond"></i>
+<i data-fa-symbol="clubs" class="fa-solid fa-club"></i>
+<i data-fa-symbol="spades" class="fa-solid fa-spade"></i>
 
 <style>
 
