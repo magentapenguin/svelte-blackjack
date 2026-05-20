@@ -24,7 +24,7 @@
         clubs: '<svg><use href="#clubs"></use></svg>',
         spades: '<svg><use href="#spades"></use></svg>',
     }
-    let suitColors = $dervied(!dark ?
+    let suitColors = $derived(!dark ?
 	{
         hearts: "#c00",
         diamonds: "#c00",
