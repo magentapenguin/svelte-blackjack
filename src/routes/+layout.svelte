@@ -33,12 +33,13 @@
 		gap: 1em;
 		align-items: center;
 		justify-content: center;
-		font-family: 'Inter', sans-serif;
+		--font: 'Inter', sans-serif;
+		font-family: var(--font);
 		background: #111;
 	}
 	@supports (font-variation-settings: normal) {
 		:global(body) {
-			font-family: 'Inter Variable', sans-serif;
+			--font: 'Inter Variable', sans-serif;
 		}
 	}
 	:global([hidden]) {

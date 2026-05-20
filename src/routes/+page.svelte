@@ -351,7 +351,7 @@
 	}
 	@media (pointer: coarse) {
 		button {
-			padding: 1em 2em;
+			padding: 0.75em 2em;
 			font-size: 1.2em;
 		}
 	}
@@ -381,8 +381,8 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		width: min(80vw, 80vh);
-		height: min(80vw, 80vh);
+		width: max(80vw, 80vh);
+		height: max(80vw, 80vh);
 		background: radial-gradient(circle, var(--color) 0%, transparent 50%);
 		pointer-events: none;
 	}
@@ -404,12 +404,15 @@
 			font-size: 3em;
 		}
 	}
-	@media (max-height: 500px) {
+	@media (max-height: 600px) {
 		.card-slot {
 			height: 50px;
 		}
 		.score {
 			margin-block: 25vh;
+		}
+		.status {
+			font-size: 2em;
 		}
 	}
 </style>
