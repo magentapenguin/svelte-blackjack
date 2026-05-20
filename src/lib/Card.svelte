@@ -7,6 +7,7 @@
         placeholder = false,
         hidden = false,
         toponly = false,
+        dark = false,
     }: {
         flipped?: boolean,
         suit: "hearts" | "diamonds" | "clubs" | "spades",
@@ -15,6 +16,7 @@
         placeholder?: boolean,
         hidden?: boolean,
         toponly?: boolean,
+        dark?: boolean,
     } = $props();
     const suits = {
         hearts: '<svg><use href="#hearts"></use></svg>',
@@ -22,11 +24,19 @@
         clubs: '<svg><use href="#clubs"></use></svg>',
         spades: '<svg><use href="#spades"></use></svg>',
     }
-    const suitColors = {
+    let suitColors = {
         hearts: "#c00",
         diamonds: "#c00",
         clubs: "#000",
         spades: "#000",
+    }
+    if (dark) {
+        suitColors = {
+            hearts: "#f88",
+            diamonds: "#f88",
+            clubs: "#ccc",
+            spades: "#ccc",
+        }
     }
     const mapping = {
         "J": 11,
@@ -76,7 +86,7 @@
     let style = $derived(colors[color]);
 </script>
 <div 
-    class="container"
+    class={["container", { dark }]}
     style={
         Object.entries(style).map(([key, value]) => `${key}: ${value}`).join("; ")
     }
@@ -109,12 +119,10 @@
 
 
 <style>
-    :root {
+	.container {
         --bg-1: #eee;
         --fg-1: #000;
         --fg-2: #333;
-    }
-	.container {
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
@@ -122,6 +130,12 @@
 		justify-content: center;
 		perspective: 100vh;
 	}
+
+    .dark.container {
+        --bg-1: #222;
+        --fg-1: #fff;
+        --fg-2: #ccc;
+    }
 
 	.card {
 		position: relative;

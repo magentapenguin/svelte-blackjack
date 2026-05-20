@@ -1,12 +1,12 @@
 <script lang="ts">
     import Card from '$lib/Card.svelte';
-    let { cards = [], color }: { cards: { suit: string; value: number }[]; color: string } = $props();
+    let { cards = [], color, dark }: { cards: { suit: string; value: number }[]; color: string; dark?: boolean } = $props();
 </script>
 
 <div class="stack" style:--card-count={cards.length}>
     {#each cards as card, i}
         <div style="position: absolute; top: 0; left: 0; transform: translateZ({-i * 0.5}em);">
-            <Card suit={card.suit} number={card.value} color={color} toponly />
+            <Card suit={card.suit} number={card.value} color={color} dark={dark} toponly />
         </div>
     {/each}
 </div>

@@ -95,7 +95,7 @@
 		});
 		let done = false;
 		requestAnimationFrame(function animate() {
-		if (!deck || !playerHand || !dealerHand) return;
+			if (!deck || !playerHand || !dealerHand) return;
 			if (done) return;
 			const { x, y } = spring.current;
 			const movingCard = movingCards.find((c) => c.id === id);
@@ -210,6 +210,7 @@
 	}
 
 	let cardColor = 'purple';
+	let cardDark = true;
 
 	resetGame();
 
@@ -224,7 +225,7 @@
 		onclick={hit}
 		style="cursor: pointer; background: none; border: none; padding: 0;"
 	>
-		<CardStack color={cardColor} cards={cardDeck} />
+		<CardStack color={cardColor} dark={cardDark} cards={cardDeck} />
 	</button>
 
 	<div class="score dealer" style:color={dealerScore > 21 ? 'red' : 'white'}>{dealerScore}</div>
@@ -239,6 +240,7 @@
 					placeholder={card.placeholder}
 					flipped={!card.placeholder}
 					color={cardColor}
+					dark={cardDark}
 				/>
 			</div>
 		{/each}
@@ -253,6 +255,7 @@
 					placeholder={card.placeholder}
 					flipped={!card.placeholder}
 					color={cardColor}
+					dark={cardDark}
 				/>
 			</div>
 		{/each}
@@ -288,7 +291,7 @@
 		class="moving-card"
 		style="position: fixed; left: {card.x}px; top: {card.y}px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1000;"
 	>
-		<Card suit={card.suit} number={card.value} color={cardColor} />
+		<Card suit={card.suit} number={card.value} color={cardColor} dark={cardDark} />
 	</div>
 {/each}
 
@@ -311,7 +314,7 @@
 		height: 100vh;
 		overflow: hidden;
 		position: relative;
-		width:  100vw;
+		width: 100vw;
 	}
 	.hand {
 		position: absolute;

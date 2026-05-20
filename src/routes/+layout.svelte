@@ -35,7 +35,7 @@
 		justify-content: center;
 		--font: 'Inter', sans-serif;
 		font-family: var(--font);
-		background: #111;
+		background: radial-gradient(circle, #111, #000);
 	}
 	@supports (font-variation-settings: normal) {
 		:global(body) {
