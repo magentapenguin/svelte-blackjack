@@ -141,7 +141,7 @@
 		state = 'dealing';
 		await drawCard('player');
 		state = 'player-turn';
-		if (playerScore >= 21) {
+		if (playerScore > 21) {
 			await endGame();
 		}
 	}
