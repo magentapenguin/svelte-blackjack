@@ -54,24 +54,24 @@
     });
     const colors = {
         blue: {
-            "--bg-2": "#08c",
-            "--bg-3": "#06a",
+            "--bg-2": "var(--blue)",
+            "--bg-3": "var(--blue-dark)",
         },
         green: {
-            "--bg-2": "#086",
-            "--bg-3": "#064",
+            "--bg-2": "var(--green)",
+            "--bg-3": "var(--green-dark)",
         },
         purple: {
-            "--bg-2": "#80c",
-            "--bg-3": "#60a",
+            "--bg-2": "var(--purple)",
+            "--bg-3": "var(--purple-dark)",
         },
         red: {
-            "--bg-2": "#c00",
-            "--bg-3": "#a00",
+            "--bg-2": "var(--red)",
+            "--bg-3": "var(--red-dark)",
         },
         yellow: {
-            "--bg-2": "#cc0",
-            "--bg-3": "#aa0",
+            "--bg-2": "var(--yellow)",
+            "--bg-3": "var(--yellow-dark)",
         },
     }
     let style = $derived(colors[color]);

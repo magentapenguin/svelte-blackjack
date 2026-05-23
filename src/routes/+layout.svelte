@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '$lib/themes.css'
+	import '$lib/themes.scss'
 	import 'inter-ui/inter.css';
 	import 'inter-ui/inter-variable.css';
 	import favicon from '$lib/assets/favicon.svg';
@@ -26,14 +26,20 @@
 		margin: 0;
 		padding: 0;
 		height: 100vh;
-		overflow: hidden;
 		width: 100vw;
+		overflow: hidden;
+	}
+	:global(html) {
+		height: 100lvh;
+		width: 100lvw;
 	}
 	:global(*) {
 		box-sizing: border-box;
 	}
 	:global(body) {
 		display: flex;
+		height: 100vh;
+		width: 100vw;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;

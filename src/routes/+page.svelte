@@ -3,6 +3,8 @@
 	import CardStack from '$lib/CardStack.svelte';
 	import { onMount, tick } from 'svelte';
 	import { Spring } from 'svelte/motion';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 
 	let cardDeck: { suit: string; value: number }[] = $state([]);
 
@@ -132,7 +134,7 @@
 		$state('initial');
 	let dealerWon = $state(false);
 	let playerWon = $state(false);
-	let endStateColor = $derived(playerWon ? '#4f4' : dealerWon ? '#f44' : '#ff4');
+	let endStateColor = $derived(playerWon ? 'var(--green)' : dealerWon ? 'var(--red)' : 'var(--yellow)');
 
 	async function hit() {
 		if (state !== 'player-turn') return;
@@ -226,8 +228,6 @@
 		});
 	});
 
-	let settingsOpen = $state(false);
-
 	$effect(() => {
 		document.documentElement.setAttribute('data-theme', settings.theme);
 	});
@@ -293,12 +293,12 @@
 		{#if state === 'dealing'}
 			Dealing cards...
 		{:else if state === 'player-turn'}
-			<button onclick={hit} style:--color="#0f0" class="button">Hit</button>
-			<button onclick={stand} style:--color="#0ff" class="button">Stand</button>
+			<button onclick={hit} style:--color="var(--primary)" class="button">Hit</button>
+			<button onclick={stand} style:--color="var(--secondary)" class="button">Stand</button>
 		{:else if state === 'dealer-turn'}
 			Dealer's turn...
 		{:else if state === 'game-over'}
-			<button onclick={newGame} style:--color={playerWon ? '#484' : dealerWon ? '#a44' : '#884'} class="button"
+			<button onclick={newGame} style:--color={playerWon ? 'var(--green-muted)' : dealerWon ? 'var(--red-muted)' : 'var(--yellow-muted)'} class="button"
 				>New Game</button
 			>
 		{/if}
@@ -317,7 +317,7 @@
 	<div class="status-bg" bind:this={statusBg} style:--color={endStateColor}></div>
 {/if}
 <button
-	onclick={() => (settingsOpen = !settingsOpen)}
+	onclick={() => (replaceState('', { settings: true }))}
 	style="position: fixed; top: 15px; left: 15px; z-index: 998; background: none; border: none; padding: 0; font-size: 1.5em; cursor: pointer; color: var(--fg-1);"
 	title="Settings"
 >
@@ -328,10 +328,10 @@
 	<meta name="color-scheme" content={settings.darkMode ? 'dark' : 'light'} />
 </svelte:head>
 
-<div class="dialog settings" hidden={!settingsOpen}>
+<div class="dialog settings" hidden={!page.state.settings}>
 	<h2 style="margin-top: 0;">Settings
 		<button
-			onclick={() => (settingsOpen = false)}
+			onclick={() => (replaceState('', { settings: false }))}
 			style="background: none; border: none; padding: 0; cursor: pointer; position: absolute; top: 15px; right: 15px; font-size: 1em; color: var(--fg-1);"
 			title="Close"
 		>
@@ -340,13 +340,13 @@
 	</h2>
 	<div style="display: grid; gap: 1em; grid-template-columns: max-content 1fr; align-items: center;">
 		<span>Card Color:</span>
-		<div>
+		<div class="button-group">
 			{#each Object.entries({
-				blue: '#08f',
-				green: '#0f8',
-				red: '#f00',
-				purple: '#80f',
-				yellow: '#ff0',
+				blue: 'var(--blue)',
+				green: 'var(--green)',
+				red: 'var(--red)',
+				purple: 'var(--purple)',
+				yellow: 'var(--yellow)',
 			}) as [name, value]}
 				<label class="button" style="--color: {value}; margin-right: 0.5em; margin-bottom: 0.5em; cursor: pointer;">
 					<input
@@ -364,13 +364,13 @@
 		<span>
 			Theme:
 		</span>
-		<div>
+		<div class="button-group">
 			{#each Object.entries({
-				light: ['Light', '#eee', '#111'],
-				dark: ['Dark', '#1d1d1d', '#eee'],
-				oled: ['OLED', '#000', '#eee'],
-			}) as [name, [label, bg1, fg1]]}
-				<label class="button" style="background: {bg1}; color: {fg1}; margin-right: 0.5em; margin-bottom: 0.5em; cursor: pointer;">
+				light: 'Light',
+				dark: 'Dark',
+				oled: 'OLED',
+			}) as [name, label]}
+				<label class="button" style="background: var(--bg-1); color: var(--fg-1); margin-right: 0.5em; margin-bottom: 0.5em; cursor: pointer;" data-theme={name}>
 					<input
 						type="radio"
 						name="theme"
@@ -390,9 +390,9 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
 	class="dialog-bg"
-	hidden={!settingsOpen}
+	hidden={!page.state.settings}
 	style="position: fixed; top: 0; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"
-	onclick={() => (settingsOpen = false)}
+	onclick={() => (replaceState('', { settings: false }))}
 ></div>
 
 <style>
@@ -402,6 +402,10 @@
 		right: 20px;
 		transform: translateY(-50%);
 	}
+	.button-group {
+		display: flex;
+		flex-wrap: wrap;
+	}
 	.dialog {
 		position: fixed;
 		inset: 2em;
@@ -410,7 +414,7 @@
 		border-radius: 8px;
 		padding: 20px;
 		z-index: 1000;
-		border: 1px solid var(--bg-3);
+		border: 1px solid var(--fg-3);
 		box-shadow: 0 0 10px #0003;
 	}
 	.checkbox {
@@ -459,12 +463,6 @@
 		cursor: pointer;
 		font-weight: 500;
 	}
-	@media (pointer: coarse) {
-		.button {
-			padding: 0.75em 2em;
-			font-size: 1.2em;
-		}
-	}
 	@property --color {
 		syntax: '<color>';
 		inherits: true;
@@ -494,9 +492,9 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		width: max(80vw, 80vh);
-		height: max(80vw, 80vh);
-		background: radial-gradient(circle, var(--color) 0%, transparent 50%);
+		width: 100vmin;
+		height: 100vmin;
+		background: radial-gradient(circle, var(--color) 0%, transparent 75%);
 		pointer-events: none;
 	}
 	@media (max-width: 600px) {
