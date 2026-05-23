@@ -412,8 +412,13 @@
 	}
 	.dialog {
 		position: fixed;
-		inset: 2em;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 		margin: auto;
+		min-height: 500px;
+		width: 80vw;
+		max-height: 80vh;
 		background: var(--bg-2);
 		border-radius: 8px;
 		padding: 20px;
@@ -465,7 +470,7 @@
 		background: color-mix(in srgb, var(--color), transparent 75%);
 		color: color-mix(in srgb, var(--fg-color, var(--color)), var(--fg-1) 60%);
 		cursor: pointer;
-		font-weight: 500;
+		font-weight: 600;
 	}
 	@property --color {
 		syntax: '<color>';
@@ -500,11 +505,6 @@
 		height: 100vmin;
 		background: radial-gradient(circle, var(--color) 0%, transparent 75%);
 		pointer-events: none;
-	}
-	@media (max-width: 800px) {
-		.dialog {
-			inset: 1em;
-		}
 	}
 	@media (max-width: 600px) {
 		.card-slot {
