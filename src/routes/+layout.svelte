@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '$lib/themes.css'
 	import 'inter-ui/inter.css';
 	import 'inter-ui/inter-variable.css';
 	import favicon from '$lib/assets/favicon.svg';
@@ -8,6 +9,8 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<title>Blackjack</title>
+	<meta name="description" content="A simple blackjack game built with SvelteKit." />
 	<script src="https://kit.fontawesome.com/4e3543c5e6.js" crossorigin="anonymous"></script>
 </svelte:head>
 
@@ -19,7 +22,6 @@
 <i data-fa-symbol="spades" class="fa-solid fa-spade"></i>
 
 <style>
-
 	:global(html, body) {
 		margin: 0;
 		padding: 0;
@@ -27,19 +29,22 @@
 		overflow: hidden;
 		width: 100vw;
 	}
+	:global(*) {
+		box-sizing: border-box;
+	}
 	:global(body) {
 		display: flex;
 		flex-direction: column;
-		gap: 1em;
 		align-items: center;
 		justify-content: center;
-		--font: 'Inter', sans-serif;
-		font-family: var(--font);
-		background: radial-gradient(circle, #111, #000);
+		--font-family: 'Inter', sans-serif;
+		font-family: var(--font-family);
+		background: radial-gradient(circle, var(--bg-1), var(--bg-2));
+		color: var(--fg-1);
 	}
 	@supports (font-variation-settings: normal) {
 		:global(body) {
-			--font: 'Inter Variable', sans-serif;
+			--font-family: 'Inter Variable', sans-serif;
 		}
 	}
 	:global([hidden]) {

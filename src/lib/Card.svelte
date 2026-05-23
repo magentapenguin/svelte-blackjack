@@ -7,7 +7,6 @@
         placeholder = false,
         hidden = false,
         toponly = false,
-        dark = false,
     }: {
         flipped?: boolean,
         suit: "hearts" | "diamonds" | "clubs" | "spades",
@@ -16,7 +15,6 @@
         placeholder?: boolean,
         hidden?: boolean,
         toponly?: boolean,
-        dark?: boolean,
     } = $props();
     const suits = {
         hearts: '<svg><use href="#hearts"></use></svg>',
@@ -24,18 +22,12 @@
         clubs: '<svg><use href="#clubs"></use></svg>',
         spades: '<svg><use href="#spades"></use></svg>',
     }
-    let suitColors = $derived(!dark ?
-	{
-        hearts: "#c00",
-        diamonds: "#c00",
-        clubs: "#000",
-        spades: "#000",
-    } : {
-        hearts: "#faa",
-        diamonds: "#faa",
-        clubs: "#fff",
-        spades: "#fff",
-    })
+    const suitColors = {
+        hearts: "red",
+        diamonds: "red",
+        clubs: "black",
+        spades: "black",
+    }
     
     const mapping = {
         "J": 11,
@@ -85,11 +77,11 @@
     let style = $derived(colors[color]);
 </script>
 <div 
-    class={["container", { dark }]}
-    style={
-        Object.entries(style).map(([key, value]) => `${key}: ${value}`).join("; ")
-    }
+    class={["container", suitColors[suit] ]}
     hidden={hidden}
+    style={
+        Object.entries(style).map(([k, v]) => `${k}: ${v}`).join(";")
+    }
 >
     <div
         class={["card", { flipped }]}
@@ -97,14 +89,14 @@
     >
     {#if !toponly}
         <div class="front" hidden={placeholder}>
-            <div class="symbol" style="color: {suitColors[suit]}">
+            <div class="symbol">
                 {inverseMapping[value] ?? value}
                 {@html suits[suit]}
             </div>
-            <div class="value" style="color: {suitColors[suit]}">
+            <div class="value">
                 {@html icons[value]}
             </div>
-            <div class="invert-symbol" style="color: {suitColors[suit]}">
+            <div class="invert-symbol">
                 {inverseMapping[value] ?? value}
                 {@html suits[suit]}
             </div>
@@ -119,9 +111,6 @@
 
 <style>
 	.container {
-        --bg-1: #eee;
-        --fg-1: #000;
-        --fg-2: #333;
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
@@ -130,10 +119,11 @@
 		perspective: 100vh;
 	}
 
-    .dark.container {
-        --bg-1: #222;
-        --fg-1: #fff;
-        --fg-2: #ccc;
+    .container.red .front {
+        color: red;
+    }
+    .container.black .front {
+        color: var(--fg-1);
     }
 
 	.card {

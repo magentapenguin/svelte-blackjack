@@ -1,0 +1,21 @@
+[data-theme="light"], :root {
+    --bg-1: #eee;
+    --bg-2: #fff;
+    --bg-3: #ddd;
+    --fg-1: #000;
+    --fg-2: #333;
+}
+[data-theme="dark"] {
+    --bg-1: #1d1d1d;
+    --bg-2: #212121;
+    --bg-3: #111;
+    --fg-1: #eee;
+    --fg-2: #888;
+}
+[data-theme="oled"] {
+    --bg-1: #000;
+    --bg-2: #000;
+    --bg-3: #111;
+    --fg-1: #eee;
+    --fg-2: #ccc;
+}

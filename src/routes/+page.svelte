@@ -1,10 +1,8 @@
 <script lang="ts">
 	import Card from '$lib/Card.svelte';
 	import CardStack from '$lib/CardStack.svelte';
-	import { onMount } from 'svelte';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { Spring } from 'svelte/motion';
-	import { draw } from 'svelte/transition';
 
 	let cardDeck: { suit: string; value: number }[] = $state([]);
 
@@ -209,8 +207,30 @@
 		await dealInitialCards();
 	}
 
-	let cardColor = 'purple';
-	let cardDark = true;
+	let settings = $state({
+		cardColor: 'purple',
+		theme: 'dark',
+	});
+	onMount(() => {
+		let localSettings = localStorage.getItem('blackjackSettings');
+		if (localSettings) {
+			settings = JSON.parse(localSettings);
+		}
+		$effect(() => {
+			localStorage.setItem('blackjackSettings', JSON.stringify(settings));
+		});
+		addEventListener('storage', (e) => {
+			if (e.key === 'blackjackSettings' && e.newValue) {
+				settings = JSON.parse(e.newValue);
+			}
+		});
+	});
+
+	let settingsOpen = $state(false);
+
+	$effect(() => {
+		document.documentElement.setAttribute('data-theme', settings.theme);
+	});
 
 	resetGame();
 
@@ -225,11 +245,11 @@
 		onclick={hit}
 		style="cursor: pointer; background: none; border: none; padding: 0;"
 	>
-		<CardStack color={cardColor} dark={cardDark} cards={cardDeck} />
+		<CardStack color={settings.cardColor} dark={settings.darkMode} cards={cardDeck} />
 	</button>
 
-	<div class="score dealer" style:color={dealerScore > 21 ? 'red' : 'white'}>{dealerScore}</div>
-	<div class="score player" style:color={playerScore > 21 ? 'red' : 'white'}>{playerScore}</div>
+	<div class="score dealer" style:color={dealerScore > 21 ? 'red' : 'var(--fg-1)'}>{dealerScore}</div>
+	<div class="score player" style:color={playerScore > 21 ? 'red' : 'var(--fg-1)'}>{playerScore}</div>
 
 	<div class="hand player" bind:this={playerHand}>
 		{#each playerCards as card, i (`player-${card.suit}-${card.value}-${i}`)}
@@ -239,8 +259,7 @@
 					number={card.value}
 					placeholder={card.placeholder}
 					flipped={!card.placeholder}
-					color={cardColor}
-					dark={cardDark}
+					color={settings.cardColor}
 				/>
 			</div>
 		{/each}
@@ -254,8 +273,7 @@
 					number={card.value}
 					placeholder={card.placeholder}
 					flipped={!card.placeholder}
-					color={cardColor}
-					dark={cardDark}
+					color={settings.cardColor}
 				/>
 			</div>
 		{/each}
@@ -275,12 +293,12 @@
 		{#if state === 'dealing'}
 			Dealing cards...
 		{:else if state === 'player-turn'}
-			<button onclick={hit} style:--color="#080">Hit</button>
-			<button onclick={stand} style:--color="#088">Stand</button>
+			<button onclick={hit} style:--color="#0f0" class="button">Hit</button>
+			<button onclick={stand} style:--color="#0ff" class="button">Stand</button>
 		{:else if state === 'dealer-turn'}
 			Dealer's turn...
 		{:else if state === 'game-over'}
-			<button onclick={newGame} style:--color={playerWon ? '#484' : dealerWon ? '#a44' : '#884'}
+			<button onclick={newGame} style:--color={playerWon ? '#484' : dealerWon ? '#a44' : '#884'} class="button"
 				>New Game</button
 			>
 		{/if}
@@ -289,15 +307,93 @@
 {#each movingCards as card, i (`moving-${card.suit}-${card.value}-${i}`)}
 	<div
 		class="moving-card"
-		style="position: fixed; left: {card.x}px; top: {card.y}px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1000;"
+		style="position: fixed; left: {card.x}px; top: {card.y}px; transform: translate(-50%, -50%); pointer-events: none; z-index: 500;"
 	>
-		<Card suit={card.suit} number={card.value} color={cardColor} dark={cardDark} />
+		<Card suit={card.suit} number={card.value} color={settings.cardColor} />
 	</div>
 {/each}
 
 {#if state === 'game-over'}
 	<div class="status-bg" bind:this={statusBg} style:--color={endStateColor}></div>
 {/if}
+<button
+	onclick={() => (settingsOpen = !settingsOpen)}
+	style="position: fixed; top: 15px; left: 15px; z-index: 998; background: none; border: none; padding: 0; font-size: 1.5em; cursor: pointer; color: var(--fg-1);"
+	title="Settings"
+>
+	<i class="fa-solid fa-gear"></i>
+</button>
+
+<svelte:head>
+	<meta name="color-scheme" content={settings.darkMode ? 'dark' : 'light'} />
+</svelte:head>
+
+<div class="dialog settings" hidden={!settingsOpen}>
+	<h2 style="margin-top: 0;">Settings
+		<button
+			onclick={() => (settingsOpen = false)}
+			style="background: none; border: none; padding: 0; cursor: pointer; position: absolute; top: 15px; right: 15px; font-size: 1em;"
+			title="Close"
+		>
+			<i class="fa-solid fa-xmark"></i>
+		</button>
+	</h2>
+	<div style="display: grid; gap: 1em; grid-template-columns: max-content 1fr; align-items: center;">
+		<span>Card Color:</span>
+		<div>
+			{#each Object.entries({
+				blue: '#08f',
+				green: '#0f8',
+				red: '#f00',
+				purple: '#80f',
+				yellow: '#ff0',
+			}) as [name, value]}
+				<label class="button" style="--color: {value}; margin-right: 0.5em; margin-bottom: 0.5em; cursor: pointer;">
+					<input
+						type="radio"
+						name="color"
+						class="checkbox"
+						value={name}
+						bind:group={settings.cardColor}
+						hidden
+					/>
+					{name.charAt(0).toUpperCase() + name.slice(1)}
+				</label>
+			{/each}
+		</div>
+		<span>
+			Theme:
+		</span>
+		<div>
+			{#each Object.entries({
+				light: ['Light', '#eee', '#111'],
+				dark: ['Dark', '#1d1d1d', '#eee'],
+				oled: ['OLED', '#000', '#eee'],
+			}) as [name, [label, bg1, fg1]]}
+				<label class="button" style="background: {bg1}; color: {fg1}; margin-right: 0.5em; margin-bottom: 0.5em; cursor: pointer;">
+					<input
+						type="radio"
+						name="theme"
+						class="checkbox"
+						value={name}
+						bind:group={settings.theme}
+						hidden
+					/>
+					{label}
+				</label>
+			{/each}
+		</div>
+	</div>
+</div>
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+	class="dialog-bg"
+	hidden={!settingsOpen}
+	style="position: fixed; top: 0; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"
+	onclick={() => (settingsOpen = false)}
+></div>
 
 <style>
 	.deck {
@@ -305,6 +401,21 @@
 		top: 50%;
 		right: 20px;
 		transform: translateY(-50%);
+	}
+	.dialog {
+		position: fixed;
+		inset: 2em;
+		margin: auto;
+		background: var(--bg-2);
+		border-radius: 8px;
+		padding: 20px;
+		z-index: 1000;
+		border: 1px solid var(--bg-3);
+		box-shadow: 0 0 10px #0003;
+	}
+	.checkbox {
+		width: 1.2em;
+		height: 1.2em;
 	}
 	.game {
 		display: flex;
@@ -334,26 +445,22 @@
 	}
 	.score {
 		font-size: 1.5em;
-		color: white;
-		text-shadow: 0 0 5px black;
+		text-shadow: 0 0 5px gray;
 		position: absolute;
 	}
-	button {
+	.button {
 		font: inherit;
+		font-family: var(--font);
 		padding: 0.5em 1em;
 		border: none;
 		border-radius: 5px;
-		background: linear-gradient(
-			180deg,
-			color-mix(in srgb, var(--color), white 20%) 0%,
-			color-mix(in srgb, var(--color), black 20%) 100%
-		);
-		color: white;
+		background: color-mix(in srgb, var(--color), transparent 75%);
+		color: color-mix(in srgb, var(--fg-color, var(--color)), var(--fg-1) 60%);
 		cursor: pointer;
 		font-weight: 500;
 	}
 	@media (pointer: coarse) {
-		button {
+		.button {
 			padding: 0.75em 2em;
 			font-size: 1.2em;
 		}
@@ -363,8 +470,11 @@
 		inherits: true;
 		initial-value: #08f;
 	}
-	button:hover {
-		filter: brightness(120%);
+	.button:has(.checkbox:checked) {
+		background: color-mix(in srgb, var(--color), transparent 50%);
+	}
+	.button:hover {
+		background: color-mix(in srgb, var(--color), transparent 60%);
 	}
 	.status {
 		background: linear-gradient(
