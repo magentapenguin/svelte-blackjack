@@ -134,7 +134,7 @@
 		$state('initial');
 	let dealerWon = $state(false);
 	let playerWon = $state(false);
-	let endStateColor = $derived(playerWon ? 'var(--green)' : dealerWon ? 'var(--red)' : 'var(--yellow)');
+	let endStateColor = $derived(playerWon ? 'var(--green-dark)' : dealerWon ? 'var(--red-dark)' : 'var(--yellow-dark)');
 
 	async function hit() {
 		if (state !== 'player-turn') return;
@@ -289,7 +289,7 @@
 			{/if}
 		</div>
 	{/if}
-	<div class="controls" style="color: white; font-weight: 600;">
+	<div class="controls" style="color: var(--fg-2); font-weight: 600;">
 		{#if state === 'dealing'}
 			Dealing cards...
 		{:else if state === 'player-turn'}
@@ -338,7 +338,7 @@
 			<i class="fa-solid fa-xmark"></i>
 		</button>
 	</h2>
-	<div style="display: grid; gap: 1em; grid-template-columns: max-content 1fr; align-items: center;">
+	<div style="display: grid; gap: 1em; grid-template-columns: max-content 1fr; align-items: center; overflow-y: scroll;">
 		<span>Card Color:</span>
 		<div class="button-group">
 			{#each Object.entries({
@@ -383,6 +383,7 @@
 				</label>
 			{/each}
 		</div>
+		<span></span>
 	</div>
 </div>
 
@@ -401,6 +402,9 @@
 		top: 50%;
 		right: 20px;
 		transform: translateY(-50%);
+	}
+	.deck:hover {
+		filter: brightness(105%)
 	}
 	.button-group {
 		display: flex;
@@ -496,6 +500,11 @@
 		height: 100vmin;
 		background: radial-gradient(circle, var(--color) 0%, transparent 75%);
 		pointer-events: none;
+	}
+	@media (max-width: 800px) {
+		.dialog {
+			inset: 1em;
+		}
 	}
 	@media (max-width: 600px) {
 		.card-slot {
