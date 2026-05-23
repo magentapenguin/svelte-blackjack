@@ -332,7 +332,7 @@
 	<h2 style="margin-top: 0;">Settings
 		<button
 			onclick={() => (settingsOpen = false)}
-			style="background: none; border: none; padding: 0; cursor: pointer; position: absolute; top: 15px; right: 15px; font-size: 1em;"
+			style="background: none; border: none; padding: 0; cursor: pointer; position: absolute; top: 15px; right: 15px; font-size: 1em; color: var(--fg-1);"
 			title="Close"
 		>
 			<i class="fa-solid fa-xmark"></i>
