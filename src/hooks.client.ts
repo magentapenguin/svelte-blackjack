@@ -8,6 +8,7 @@ export async function init() {
 		defaults: '2026-01-30',
 		capture_exceptions: true,
 		cookieless_mode: 'always',
+  		ui_host: 'https://us.posthog.com'
 	});
 }
 
