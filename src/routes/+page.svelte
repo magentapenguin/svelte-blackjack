@@ -3,8 +3,10 @@
 	import CardStack from '$lib/CardStack.svelte';
 	import { onMount, tick } from 'svelte';
 	import { Spring } from 'svelte/motion';
+	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
+	import posthog from 'posthog-js';
 
 	let cardDeck: { suit: string; value: number }[] = $state([]);
 
@@ -134,10 +136,13 @@
 		$state('initial');
 	let dealerWon = $state(false);
 	let playerWon = $state(false);
-	let endStateColor = $derived(playerWon ? 'var(--green-dark)' : dealerWon ? 'var(--red-dark)' : 'var(--yellow-dark)');
+	let endStateColor = $derived(
+		playerWon ? 'var(--green-dark)' : dealerWon ? 'var(--red-dark)' : 'var(--yellow-dark)'
+	);
 
 	async function hit() {
 		if (state !== 'player-turn') return;
+		posthog.capture('player_hit', { player_score: playerScore });
 		state = 'dealing';
 		await drawCard('player');
 		state = 'player-turn';
@@ -147,6 +152,7 @@
 	}
 	async function stand() {
 		if (state !== 'player-turn') return;
+		posthog.capture('player_stood', { player_score: playerScore });
 		state = 'dealer-turn';
 		while (dealerScore < 17) {
 			await drawCard('dealer');
@@ -156,19 +162,33 @@
 
 	async function endGame() {
 		state = 'game-over';
+		let outcome = 'tie';
 		if (dealerScore > 21 && playerScore > 21) {
 			// both bust, tie
 		} else if (dealerScore > 21) {
 			playerWon = true;
+			outcome = 'player_won';
 		} else if (playerScore > 21) {
 			dealerWon = true;
+			outcome = 'dealer_won';
 		} else if (playerScore === dealerScore) {
 			// tie
 		} else if (playerScore > dealerScore) {
 			playerWon = true;
+			outcome = 'player_won';
 		} else {
 			dealerWon = true;
+			outcome = 'dealer_won';
 		}
+		posthog.capture('game_over', { outcome, player_score: playerScore, dealer_score: dealerScore });
+		if (outcome === 'player_won') {
+			stats.playerWins++;
+		} else if (outcome === 'dealer_won') {
+			stats.dealerWins++;
+		} else {
+			stats.ties++;
+		}
+		stats.gamesPlayed++;
 		await tick();
 		if (statusBg) {
 			statusBg.animate(
@@ -190,6 +210,7 @@
 	}
 
 	async function dealInitialCards() {
+		posthog.capture('game_started');
 		state = 'dealing';
 		await drawCard('player');
 		await drawCard('dealer');
@@ -212,18 +233,45 @@
 	let settings = $state({
 		cardColor: 'purple',
 		theme: 'dark',
+		stats: false
 	});
+
+	let stats = $state({
+		gamesPlayed: 0,
+		playerWins: 0,
+		dealerWins: 0,
+		ties: 0
+	});
+	let percentageStats = $derived.by(() => {
+		const { gamesPlayed, playerWins, dealerWins, ties } = stats;
+		return {
+			playerWinPercentage: gamesPlayed ? Math.round((playerWins / gamesPlayed) * 100) : 0,
+			dealerWinPercentage: gamesPlayed ? Math.round((dealerWins / gamesPlayed) * 100) : 0,
+			tiePercentage: gamesPlayed ? Math.round((ties / gamesPlayed) * 100) : 0
+		};
+	});
+
 	onMount(() => {
 		let localSettings = localStorage.getItem('blackjackSettings');
 		if (localSettings) {
-			settings = JSON.parse(localSettings);
+			// Merge local settings with defaults to allow for new settings to be added without breaking old ones
+			settings = { ...settings, ...JSON.parse(localSettings) };
+		}
+		let localStats = localStorage.getItem('blackjackStats');
+		if (localStats) {
+			stats = { ...stats, ...JSON.parse(localStats) };
 		}
 		$effect(() => {
 			localStorage.setItem('blackjackSettings', JSON.stringify(settings));
 		});
+		$effect(() => {
+			localStorage.setItem('blackjackStats', JSON.stringify(stats));
+		});
 		addEventListener('storage', (e) => {
 			if (e.key === 'blackjackSettings' && e.newValue) {
-				settings = JSON.parse(e.newValue);
+				settings = { ...settings, ...JSON.parse(e.newValue) };
+			} else if (e.key === 'blackjackStats' && e.newValue) {
+				stats = { ...stats, ...JSON.parse(e.newValue) };
 			}
 		});
 	});
@@ -248,8 +296,12 @@
 		<CardStack color={settings.cardColor} dark={settings.darkMode} cards={cardDeck} />
 	</button>
 
-	<div class="score dealer" style:color={dealerScore > 21 ? 'red' : 'var(--fg-1)'}>{dealerScore}</div>
-	<div class="score player" style:color={playerScore > 21 ? 'red' : 'var(--fg-1)'}>{playerScore}</div>
+	<div class="score dealer" style:color={dealerScore > 21 ? 'red' : 'var(--fg-1)'}>
+		{dealerScore}
+	</div>
+	<div class="score player" style:color={playerScore > 21 ? 'red' : 'var(--fg-1)'}>
+		{playerScore}
+	</div>
 
 	<div class="hand player" bind:this={playerHand}>
 		{#each playerCards as card, i (`player-${card.suit}-${card.value}-${i}`)}
@@ -298,8 +350,14 @@
 		{:else if state === 'dealer-turn'}
 			Dealer's turn...
 		{:else if state === 'game-over'}
-			<button onclick={newGame} style:--color={playerWon ? 'var(--green-muted)' : dealerWon ? 'var(--red-muted)' : 'var(--yellow-muted)'} class="button"
-				>New Game</button
+			<button
+				onclick={newGame}
+				style:--color={playerWon
+					? 'var(--green-muted)'
+					: dealerWon
+						? 'var(--red-muted)'
+						: 'var(--yellow-muted)'}
+				class="button">New Game</button
 			>
 		{/if}
 	</div>
@@ -317,38 +375,46 @@
 	<div class="status-bg" bind:this={statusBg} style:--color={endStateColor}></div>
 {/if}
 <button
-	onclick={() => (replaceState('', { settings: true }))}
+	onclick={() => replaceState('', { settings: true })}
 	style="position: fixed; top: 15px; left: 15px; z-index: 998; background: none; border: none; padding: 0; font-size: 1.5em; cursor: pointer; color: var(--fg-1);"
 	title="Settings"
 >
 	<i class="fa-solid fa-gear"></i>
 </button>
 
+
+
+{#if settings.stats}
+	<div class="stats">
+		<p style="color:var(--fg-1);">Games Played: {stats.gamesPlayed}</p>
+		<p style="color:var(--green);">Player Wins: {stats.playerWins} ({percentageStats.playerWinPercentage}%)</p>
+		<p style="color:var(--red);">Dealer Wins: {stats.dealerWins} ({percentageStats.dealerWinPercentage}%)</p>
+		<p style="color:var(--yellow);">Ties: {stats.ties} ({percentageStats.tiePercentage}%)</p>
+	</div>
+{/if}
+
 <svelte:head>
 	<meta name="color-scheme" content={settings.darkMode ? 'dark' : 'light'} />
 </svelte:head>
 
 <div class="dialog settings" hidden={!page.state.settings}>
-	<h2 style="margin-top: 0;">Settings
+	<h2 style="margin-top: 0;">
+		Settings
 		<button
-			onclick={() => (replaceState('', { settings: false }))}
+			onclick={() => replaceState('', { settings: false })}
 			style="background: none; border: none; padding: 0; cursor: pointer; position: absolute; top: 15px; right: 15px; font-size: 1em; color: var(--fg-1);"
 			title="Close"
 		>
 			<i class="fa-solid fa-xmark"></i>
 		</button>
 	</h2>
-	<div style="display: grid; gap: 1em; grid-template-columns: max-content 1fr; align-items: center; overflow-y: scroll;">
+	<div
+		style="display: grid; gap: 1em; grid-template-columns: max-content 1fr; align-items: center; overflow-y: auto;"
+	>
 		<span>Card Color:</span>
 		<div class="button-group">
-			{#each Object.entries({
-				blue: 'var(--blue)',
-				green: 'var(--green)',
-				red: 'var(--red)',
-				purple: 'var(--purple)',
-				yellow: 'var(--yellow)',
-			}) as [name, value]}
-				<label class="button" style="--color: {value}; margin-right: 0.5em; margin-bottom: 0.5em; cursor: pointer;">
+			{#each Object.entries( { blue: 'var(--blue)', green: 'var(--green)', red: 'var(--red)', purple: 'var(--purple)', yellow: 'var(--yellow)' } ) as [name, value]}
+				<label class="button" style="--color: {value}; margin-right: 0.5em; cursor: pointer;">
 					<input
 						type="radio"
 						name="color"
@@ -356,21 +422,21 @@
 						value={name}
 						bind:group={settings.cardColor}
 						hidden
+						onchange={() =>
+							posthog.capture('settings_changed', { setting: 'card_color', value: name })}
 					/>
 					{name.charAt(0).toUpperCase() + name.slice(1)}
 				</label>
 			{/each}
 		</div>
-		<span>
-			Theme:
-		</span>
+		<span> Theme: </span>
 		<div class="button-group">
-			{#each Object.entries({
-				light: 'Light',
-				dark: 'Dark',
-				oled: 'OLED',
-			}) as [name, label]}
-				<label class="button" style="background: var(--bg-1); color: var(--fg-1); margin-right: 0.5em; margin-bottom: 0.5em; cursor: pointer;" data-theme={name}>
+			{#each Object.entries({ light: 'Light', dark: 'Dark', oled: 'OLED' }) as [name, label]}
+				<label
+					class="button"
+					style="background: var(--bg-1); color: var(--fg-1); margin-right: 0.5em; cursor: pointer;"
+					data-theme={name}
+				>
 					<input
 						type="radio"
 						name="theme"
@@ -378,12 +444,31 @@
 						value={name}
 						bind:group={settings.theme}
 						hidden
+						onchange={() => posthog.capture('settings_changed', { setting: 'theme', value: name })}
 					/>
 					{label}
 				</label>
 			{/each}
 		</div>
-		<span></span>
+		<label for="stats"> Show Stats: </label>
+		<div style="display: flex; align-items: center; gap: 0.5em;">
+			<input
+				type="checkbox"
+				id="stats"
+				class="checkbox"
+				bind:checked={settings.stats}
+				onchange={() => posthog.capture('settings_changed', { setting: 'show_stats', value: settings.stats })}
+				style="width: 1.5em; height: 1.5em; cursor: pointer;"
+			/>
+			<button
+				onclick={() => stats = { gamesPlayed: 0, playerWins: 0, dealerWins: 0, ties: 0 }}
+				class="button"
+				style="--color: var(--red); font-size: 0.9em; padding: 0.25em 0.5em;"
+				title="Reset Stats"
+			>
+				Reset
+			</button>
+		</div>
 	</div>
 </div>
 
@@ -393,10 +478,22 @@
 	class="dialog-bg"
 	hidden={!page.state.settings}
 	style="position: fixed; top: 0; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"
-	onclick={() => (replaceState('', { settings: false }))}
+	onclick={() => replaceState('', { settings: false })}
 ></div>
 
 <style>
+	.stats {
+		position: fixed;
+		bottom: 20px;
+		left: 20px;
+		z-index: 1000;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.stats p {
+		margin: 0;
+	}
 	.deck {
 		position: absolute;
 		top: 50%;
@@ -404,7 +501,7 @@
 		transform: translateY(-50%);
 	}
 	.deck:hover {
-		filter: brightness(105%)
+		filter: brightness(105%);
 	}
 	.button-group {
 		display: flex;
