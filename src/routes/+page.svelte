@@ -600,7 +600,7 @@
 		transform: translate(-50%, -50%);
 		width: 100vw;
 		height: 100vh;
-		background: radial-gradient(circle, var(--color) 0%, transparent 75%);
+		background: radial-gradient(circle, var(--color) 0%, transparent 50%);
 		pointer-events: none;
 	}
 	@media (max-width: 600px) {
