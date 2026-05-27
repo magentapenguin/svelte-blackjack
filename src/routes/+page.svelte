@@ -67,6 +67,14 @@
 		} else {
 			index = dealerCards.push({ ...card, placeholder: true }) - 1;
 		}
+		if (settings.skipAnimations) {
+			if (to === 'player') {
+				playerCards[index].placeholder = false;
+			} else {
+				dealerCards[index].placeholder = false;
+			}
+			return;
+		}
 		await tick();
 		if (!deck || !playerHand || !dealerHand) return;
 		const deckRect = deck.getBoundingClientRect();
@@ -190,11 +198,15 @@
 		}
 		stats.gamesPlayed++;
 		await tick();
+		if (settings.skipAnimations) {
+			statusBg?.style.setProperty('opacity', '0.3');
+			return;
+		}
 		if (statusBg) {
 			statusBg.animate(
 				[
 					{ opacity: 0, transform: 'translate(-50%, -50%) scale(0)' },
-					{ opacity: 0.5, transform: 'translate(-50%, -50%) scale(1)' }
+					{ opacity: 0.3, transform: 'translate(-50%, -50%) scale(1)' }
 				],
 				{
 					duration: 1000,
@@ -233,7 +245,8 @@
 	let settings = $state({
 		cardColor: 'purple',
 		theme: 'dark',
-		stats: false
+		stats: false,
+		skipAnimations: false
 	});
 
 	let stats = $state({
@@ -414,7 +427,7 @@
 		<span>Card Color:</span>
 		<div class="button-group">
 			{#each Object.entries( { blue: 'var(--blue)', green: 'var(--green)', red: 'var(--red)', purple: 'var(--purple)', yellow: 'var(--yellow)' } ) as [name, value]}
-				<label class="button" style="--color: {value}; margin-right: 0.5em; cursor: pointer;">
+				<label class="button" style="--color: {value}; cursor: pointer;">
 					<input
 						type="radio"
 						name="color"
@@ -434,7 +447,7 @@
 			{#each Object.entries({ light: 'Light', dark: 'Dark', oled: 'OLED' }) as [name, label]}
 				<label
 					class="button"
-					style="background: var(--bg-1); color: var(--fg-1); margin-right: 0.5em; cursor: pointer;"
+					style="background: var(--bg-1); color: var(--fg-1); cursor: pointer;"
 					data-theme={name}
 				>
 					<input
@@ -458,7 +471,6 @@
 				class="checkbox"
 				bind:checked={settings.stats}
 				onchange={() => posthog.capture('settings_changed', { setting: 'show_stats', value: settings.stats })}
-				style="width: 1.5em; height: 1.5em; cursor: pointer;"
 			/>
 			<button
 				onclick={() => stats = { gamesPlayed: 0, playerWins: 0, dealerWins: 0, ties: 0 }}
@@ -468,6 +480,17 @@
 			>
 				Reset
 			</button>
+		</div>
+		<label for="skipAnimations"> Skip Animations: </label>
+		<div style="display: flex; align-items: center; gap: 0.5em;">
+			<input
+				type="checkbox"
+				id="skipAnimations"
+				class="checkbox"
+				bind:checked={settings.skipAnimations}
+				onchange={() => posthog.capture('settings_changed', { setting: 'skip_animations', value: settings.skipAnimations })}
+			/>
+			<span style="font-size: 0.9em; color: var(--fg-2); flex: 1;">Enabling this will disable animations for drawing cards and end game status.</span>
 		</div>
 	</div>
 </div>
@@ -506,6 +529,7 @@
 	.button-group {
 		display: flex;
 		flex-wrap: wrap;
+		gap: .25em;
 	}
 	.dialog {
 		position: fixed;
@@ -524,8 +548,27 @@
 		box-shadow: 0 0 10px #0003;
 	}
 	.checkbox {
-		width: 1.2em;
-		height: 1.2em;
+		background: none;
+		border-radius: 4px;
+		width: 1.3em;
+		height: 1.3em;
+		flex-shrink: 0;
+		cursor: pointer;
+		appearance: none;
+		position: relative;
+		border: 2px solid var(--fg-3);
+		margin-right: 0.25em;
+	}
+	.checkbox:checked {
+		background:   var(--color, var(--primary));
+		border-color: var(--color, var(--primary));
+	}
+	.checkbox:checked::after {
+		content: '';
+		position: absolute;
+		inset: 1px;
+		background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12' /%3E%3C/svg%3E")
+			center center no-repeat;
 	}
 	.game {
 		display: flex;

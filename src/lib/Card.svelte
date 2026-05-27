@@ -9,13 +9,22 @@
         toponly = false,
     }: {
         flipped?: boolean,
-        suit: "hearts" | "diamonds" | "clubs" | "spades",
-        number: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | "J" | "Q" | "K" | "A" | 11 | 12 | 13,
+        suit: string,
+        number: number | string,
         color?: "blue" | "green" | "purple" | "red" | "yellow",
         placeholder?: boolean,
         hidden?: boolean,
         toponly?: boolean,
     } = $props();
+    if (!suit || !number) {
+        throw new Error("Suit and number are required props for Card component.");
+    }
+    if (!["hearts", "diamonds", "clubs", "spades"].includes(suit)) {
+        throw new Error("Invalid suit prop for Card component. Must be one of: hearts, diamonds, clubs, spades.");
+    }
+    if (typeof number === "string" && !["J", "Q", "K", "A"].includes(number)) {
+        throw new Error("Invalid number prop for Card component. Must be a number between 1 and 10, or one of: J, Q, K, A.");
+    }
     const suits = {
         hearts: '<svg><use href="#hearts"></use></svg>',
         diamonds: '<svg><use href="#diamonds"></use></svg>',
