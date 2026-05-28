@@ -1,23 +1,27 @@
 @use 'sass:color';
+@use 'sass:map';
 
 // Theme variables
 $colors: (
-    green: #0c8,
-    red: #c00,
-    blue: #08f,
-    purple: #80f,
-    yellow: #cc0,
+    "green": #0c8,
+    "red": #f00,
+    "blue": #08f,
+    "purple": #80f,
+    "yellow": #cc0,
 );
+$colors: map.merge($colors, (
+    "primary": map.get($colors, "green"),
+    "secondary": map.get($colors, "blue"),
+));
 
 :root {
     @each $name, $color in $colors {
-        --#{""+$name}: #{$color};
-        --#{""+$name}-light: #{color.scale($color, $lightness: 20%)};
-        --#{""+$name}-dark: #{color.scale($color, $lightness: -20%)};
-        --#{""+$name}-muted: color-mix(in srgb, #{$color} 50%, var(--bg-1));
+        --#{$name}: #{$color};
+        --#{$name}-light: #{color.scale($color, $lightness: 35%)};
+        --#{$name}-dark: #{color.scale($color, $lightness: -35%)};
+        --#{$name}-muted: color-mix(in srgb, #{$color} 50%, var(--bg-1));
+        --#{$name}-contrast: color-mix(in srgb, #{$color} 50%, var(--fg-1));
     }
-    --primary: var(--green);
-    --secondary: var(--blue);
 }
 
 [data-theme="light"], :root {
@@ -26,7 +30,7 @@ $colors: (
     --bg-3: #ddd;
     --fg-1: #000;
     --fg-2: #333;
-    --fg-3: var(--bg-3);
+    --fg-3: #aaa;
 }
 [data-theme="dark"] {
     --bg-1: #1d1d1d;
@@ -34,7 +38,7 @@ $colors: (
     --bg-3: #111;
     --fg-1: #eee;
     --fg-2: #888;
-    --fg-3: var(--bg-3);
+    --fg-3: #2f2f2f;
 }
 [data-theme="oled"] {
     --bg-1: #000;
@@ -42,5 +46,5 @@ $colors: (
     --bg-3: #111;
     --fg-1: #eee;
     --fg-2: #ccc;
-    --fg-3: #222;
+    --fg-3: #333;
 }

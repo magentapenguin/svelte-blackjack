@@ -3,7 +3,6 @@
 	import CardStack from '$lib/CardStack.svelte';
 	import { onMount, tick } from 'svelte';
 	import { Spring } from 'svelte/motion';
-	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import posthog from 'posthog-js';
@@ -40,7 +39,7 @@
 	}
 
 	let playerCards: { suit: string; value: number; placeholder: boolean }[] = $state([]);
-	let dealerCards: { suit: string; value: number; placeholder: boolean }[] = $state([]);
+	let dealerCards: { suit: string; value: number; placeholder: boolean, hidden?: boolean }[] = $state([]);
 	let dealerScore = $derived(calculateHandValue(dealerCards));
 	let playerScore = $derived(calculateHandValue(playerCards));
 	let movingCards: {
@@ -162,6 +161,7 @@
 		if (state !== 'player-turn') return;
 		posthog.capture('player_stood', { player_score: playerScore });
 		state = 'dealer-turn';
+		if (settings.hideFirstCard) await wait(150);
 		while (dealerScore < 17) {
 			await drawCard('dealer');
 		}
@@ -246,7 +246,8 @@
 		cardColor: 'purple',
 		theme: 'dark',
 		stats: false,
-		skipAnimations: false
+		skipAnimations: false,
+		hideFirstCard: false,
 	});
 
 	let stats = $state({
@@ -308,10 +309,11 @@
 	>
 		<CardStack color={settings.cardColor} dark={settings.darkMode} cards={cardDeck} />
 	</button>
-
+	{#if !settings.hideFirstCard || state === 'game-over' || state === 'dealer-turn'}
 	<div class="score dealer" style:color={dealerScore > 21 ? 'red' : 'var(--fg-1)'}>
 		{dealerScore}
 	</div>
+	{/if}
 	<div class="score player" style:color={playerScore > 21 ? 'red' : 'var(--fg-1)'}>
 		{playerScore}
 	</div>
@@ -337,7 +339,7 @@
 					suit={card.suit}
 					number={card.value}
 					placeholder={card.placeholder}
-					flipped={!card.placeholder}
+					flipped={!card.placeholder && (!(settings.hideFirstCard && i === 0) || ['dealer-turn', 'game-over'].includes(state))}
 					color={settings.cardColor}
 				/>
 			</div>
@@ -400,9 +402,9 @@
 {#if settings.stats}
 	<div class="stats">
 		<p style="color:var(--fg-1);">Games Played: {stats.gamesPlayed}</p>
-		<p style="color:var(--green);">Player Wins: {stats.playerWins} ({percentageStats.playerWinPercentage}%)</p>
-		<p style="color:var(--red);">Dealer Wins: {stats.dealerWins} ({percentageStats.dealerWinPercentage}%)</p>
-		<p style="color:var(--yellow);">Ties: {stats.ties} ({percentageStats.tiePercentage}%)</p>
+		<p style="color:var(--green-contrast);">Player Wins: {stats.playerWins} ({percentageStats.playerWinPercentage}%)</p>
+		<p style="color:var(--red-contrast);">Dealer Wins: {stats.dealerWins} ({percentageStats.dealerWinPercentage}%)</p>
+		<p style="color:var(--yellow-contrast);">Ties: {stats.ties} ({percentageStats.tiePercentage}%)</p>
 	</div>
 {/if}
 
@@ -492,6 +494,17 @@
 			/>
 			<span style="font-size: 0.9em; color: var(--fg-2); flex: 1;">Enabling this will disable animations for drawing cards and end game status.</span>
 		</div>
+		<label for="hideFirstCard"> Hide Dealer's First Card: </label>
+		<div style="display: flex; align-items: center; gap: 0.5em;">
+			<input
+				type="checkbox"
+				id="hideFirstCard"
+				class="checkbox"
+				bind:checked={settings.hideFirstCard}
+				onchange={() => posthog.capture('settings_changed', { setting: 'hide_first_card', value: settings.hideFirstCard })}
+			/>
+			<span style="font-size: 0.9em; color: var(--fg-2); flex: 1;">Enabling this will keep the dealer's first card face down until the end of the game.</span>
+		</div>
 	</div>
 </div>
 
@@ -560,8 +573,8 @@
 		margin-right: 0.25em;
 	}
 	.checkbox:checked {
-		background:   var(--color, var(--primary));
-		border-color: var(--color, var(--primary));
+		background: var(--color, var(--primary-dark));
+		border: none;
 	}
 	.checkbox:checked::after {
 		content: '';
@@ -598,7 +611,7 @@
 	}
 	.score {
 		font-size: 1.5em;
-		text-shadow: 0 0 5px gray;
+		text-shadow: 0 0 5px color-mix(in srgb, currentColor, transparent 50%);
 		position: absolute;
 	}
 	.button {
@@ -615,7 +628,6 @@
 	@property --color {
 		syntax: '<color>';
 		inherits: true;
-		initial-value: #08f;
 	}
 	.button:has(.checkbox:checked) {
 		background: color-mix(in srgb, var(--color), transparent 50%);

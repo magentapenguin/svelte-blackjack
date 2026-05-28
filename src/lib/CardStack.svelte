@@ -5,7 +5,7 @@
 
 <div class="stack" style:--card-count={cards.length}>
     {#each cards as card, i}
-        <div style="position: absolute; top: 0; left: 0; transform: translateZ({-i * 0.5}em);">
+        <div style="position: absolute; top: 0; left: 0; transform: translateZ({-i * 0.7}em);">
             <Card suit={card.suit} number={card.value} color={color} dark={dark} toponly />
         </div>
     {/each}
