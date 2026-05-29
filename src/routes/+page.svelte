@@ -628,6 +628,7 @@
 	@property --color {
 		syntax: '<color>';
 		inherits: true;
+		initial-value: transparent;
 	}
 	.button:has(.checkbox:checked) {
 		background: color-mix(in srgb, var(--color), transparent 50%);

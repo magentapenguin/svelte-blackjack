@@ -1,14 +1,17 @@
 import posthog from 'posthog-js';
-import { PUBLIC_POSTHOG_PROJECT_TOKEN, PUBLIC_POSTHOG_HOST } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import type { HandleClientError } from '@sveltejs/kit';
 
 export async function init() {
-	posthog.init(PUBLIC_POSTHOG_PROJECT_TOKEN, {
-		api_host: PUBLIC_POSTHOG_HOST,
+	const token = env.PUBLIC_POSTHOG_PROJECT_TOKEN;
+	if (!token) return;
+
+	posthog.init(token, {
+		api_host: env.PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com',
 		defaults: '2026-01-30',
 		capture_exceptions: true,
 		cookieless_mode: 'always',
-  		ui_host: 'https://us.posthog.com'
+		ui_host: 'https://us.posthog.com'
 	});
 }
 
